@@ -1,6 +1,6 @@
 # DiskViz
 
-A terminal-based disk space visualizer built with Python and Textual. Navigate directories, view file sizes with color-coded progress bars, and switch between 30+ themes.
+A terminal-based disk space visualizer built with Python and Textual. Navigate directories, view file sizes with color-coded progress bars, search and sort in real-time, and switch between 31 themes.
 
 ![DiskViz Screenshot](image.png)
 
@@ -9,7 +9,11 @@ A terminal-based disk space visualizer built with Python and Textual. Navigate d
 - Interactive directory browsing with keyboard navigation
 - Color-coded size bars (red for large, yellow for medium, green for small)
 - Async scanning for non-blocking UI on large directories
-- 30+ built-in and custom themes via fuzzy search
+- 31 built-in and custom themes via fuzzy search
+- Real-time search/filter to quickly find files
+- Sort toggle by size, name, or modification time
+- Large item warning banner (>80% of total size)
+- Row borders for clear visual separation between items
 - Automatic dependency installation on first run
 - Support for 20+ Linux distributions
 - Single file, zero configuration
@@ -27,6 +31,9 @@ A terminal-based disk space visualizer built with Python and Textual. Navigate d
 # Clone the repository
 git clone https://github.com/PzN2s/diskviz.git
 cd diskviz
+
+# Run the installer (installs all dependencies automatically)
+./install.sh
 
 # Run directly
 python3 diskviz.py
@@ -61,6 +68,9 @@ DiskViz automatically installs its only dependency (`textual`) on first run usin
 If automatic installation fails, install textual manually:
 
 ```bash
+# Using the install script (recommended)
+./install.sh
+
 # Using uv (recommended)
 uv pip install textual
 
@@ -99,6 +109,9 @@ python3 diskviz.py ..
 | `Up` / `Down` | Move cursor up/down |
 | `Right` | Enter selected directory |
 | `Left` | Go to parent directory |
+| `/` | Focus search bar to filter items |
+| `Escape` | Clear search / exit search |
+| `s` | Cycle sort mode (Size / Name / Date) |
 | `t` | Open theme picker |
 | `q` | Quit |
 
@@ -108,13 +121,16 @@ python3 diskviz.py ..
 # Show help
 python3 diskviz.py --help
 
-# Show version information
-python3 diskviz.py -h
+# Scan a specific path
+python3 diskviz.py /var/log
+
+# Show version
+python3 diskviz.py --version
 ```
 
 ## Themes
 
-DiskViz comes with 30+ themes. Press `t` to open the fuzzy theme picker and search by name.
+DiskViz comes with 31 themes. Press `t` to open the fuzzy theme picker and search by name.
 
 ### Built-in Themes (21)
 
@@ -177,10 +193,13 @@ DiskViz detects your Linux distribution and provides the correct installation co
 ## How It Works
 
 1. DiskViz scans the target directory and calculates the size of each file and subdirectory
-2. Results are sorted by size (largest first)
+2. Results are sorted by size (largest first), with option to sort by name or date
 3. Each entry displays with a color-coded progress bar relative to the largest item
-4. The selected item shows its full path and metadata at the bottom
-5. All scanning runs asynchronously to keep the UI responsive
+4. Row borders provide clear visual separation between items
+5. Use real-time search to filter items instantly as you type
+6. Warning banner appears if any item exceeds 80% of total size
+7. The selected item shows its full path and metadata at the bottom
+8. All scanning runs asynchronously to keep the UI responsive
 
 ## License
 

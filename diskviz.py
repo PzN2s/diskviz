@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+__version__ = "1.0.0"
 import os
 import subprocess
 import sys
@@ -36,7 +37,7 @@ DISTRO_INSTALL = {
     "opensuse-tumbleweed": "sudo zypper install python3-pip",
     "void": "sudo xbps-install -S python3-pip",
     "gentoo": "sudo emerge pip",
-    "nixos": "use nix-shell -p python3Packages.textual",
+    "nixos": "nix-shell -p python3Packages.textual xclip --run 'python3 diskviz.py'",
     "clear-linux-os": "sudo swupd bundle-add python3-basic",
 }
 
@@ -55,14 +56,31 @@ def ensure_deps():
     distro = detect_distro()
     pip_install = DISTRO_INSTALL.get(distro, "sudo apt install python3-pip")
 
+    if distro == "nixos":
+        print("NixOS detected. Use nix-shell to run:")
+        print("  nix-shell -p python3Packages.textual --run 'python3 diskviz.py .'")
+        sys.exit(1)
+
+    uv_found = False
     try:
         subprocess.check_call(["uv", "--version"],
                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        print("Installing textual via uv...")
-        subprocess.check_call(["uv", "pip", "install", "--system", "textual"])
-        return
+        uv_found = True
     except Exception:
         pass
+
+    if uv_found:
+        try:
+            print("Installing textual via uv...")
+            subprocess.check_call(["uv", "pip", "install", "--system", "textual"])
+            return
+        except Exception:
+            pass
+        try:
+            subprocess.check_call(["uv", "pip", "install", "textual"])
+            return
+        except Exception:
+            pass
 
     try:
         subprocess.check_call([sys.executable, "-m", "pip", "--version"],
@@ -73,10 +91,11 @@ def ensure_deps():
     except Exception:
         pass
 
-    print("Error: uv and pip not found.")
-    print(f"Install pip for your distro ({distro or 'unknown'}):")
+    print("Error: Could not install textual automatically.")
+    print(f"Install manually for {distro or 'your distro'}:")
     print(f"  {pip_install}")
-    print("  or install uv: curl -LsSf https://astral.sh/uv/install.sh | sh")
+    print("  or: uv pip install textual")
+    print("  or: pip3 install textual")
     sys.exit(1)
 
 
@@ -119,19 +138,30 @@ if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] in ("-h", "--help"):
         print("DiskViz - Terminal disk space visualizer")
         print(f"Usage: {sys.argv[0]} [directory]")
-        print("  directory   Path to scan (default: current directory)")
-        print("  q           Quit")
-        print("  t           Change theme")
-        print("  Up/Down     Move cursor")
-        print("  Right       Enter directory")
-        print("  Left        Go back")
+        print("  directory    Path to scan (default: current directory)")
+        print("")
+        print("Keyboard shortcuts:")
+        print("  Up/Down      Move cursor")
+        print("  Right        Enter directory")
+        print("  Left         Go back")
+        print("  r            Refresh current directory")
+        print("  c            Copy path to clipboard")
+        print("  /            Search files")
+        print("  Escape       Clear search / unfocus")
+        print("  s            Cycle sort (size / name / date)")
+        print("  t            Change theme")
+        print("  q            Quit")
+        sys.exit(0)
+
+    if len(sys.argv) > 1 and sys.argv[1] == "--version":
+        print(f"DiskViz {__version__}")
         sys.exit(0)
 
     ensure_deps()
 
     import asyncio
     from textual.app import App, ComposeResult, Theme
-    from textual.widgets import Header, Footer, Static, ProgressBar, Label
+    from textual.widgets import Header, Footer, Static, ProgressBar, Label, Input
     from textual.containers import Vertical, ScrollableContainer
 
     class SilentScrollableContainer(ScrollableContainer):
@@ -149,6 +179,24 @@ if __name__ == "__main__":
             width: 80;
             height: auto;
             align: center middle;
+        }
+        #search_row {
+            width: 80;
+            height: auto;
+            layout: horizontal;
+            margin: 0 0 1 0;
+        }
+        #search_input {
+            width: 60;
+            height: 3;
+        }
+        #sort_label {
+            width: 20;
+            height: 3;
+            content-align: right middle;
+            color: $accent;
+            text-style: bold;
+            padding: 0 1;
         }
         #path_label {
             text-style: bold;
@@ -175,16 +223,24 @@ if __name__ == "__main__":
         }
         .item_row {
             height: 3;
-            margin: 0 0 1 0;
+            margin: 0;
             padding: 0 1;
+            border-bottom: dashed $panel;
+        }
+        .item_row:last-child {
+            border-bottom: hidden;
         }
         .item_label {
             color: $foreground;
         }
         .item_selected {
             background: $surface;
-            border-left: heavy $primary;
+            border-left: tall $primary;
+            border-bottom: dashed $primary;
             padding-left: 1;
+        }
+        .item_selected:last-child {
+            border-bottom: hidden;
         }
         .item_selected .item_label {
             color: $primary;
@@ -196,6 +252,19 @@ if __name__ == "__main__":
             width: auto;
             padding: 0 1;
             margin: 1 0 0 0;
+        }
+        #warning_label {
+            color: $error;
+            text-style: bold;
+            width: 100%;
+            padding: 0 1;
+            margin: 0 0 1 0;
+            background: $surface;
+            border: tall $error;
+            display: none;
+        }
+        #warning_label.visible {
+            display: block;
         }
         ProgressBar Bar {
             width: 100%;
@@ -210,19 +279,28 @@ if __name__ == "__main__":
 
         BINDINGS = [
             ("q", "quit", "Quit"),
+            ("r", "refresh", "Refresh"),
+            ("c", "copy_path", "Copy"),
             ("t", "change_theme", "Theme"),
             ("up", "move_up", "Up"),
             ("down", "move_down", "Down"),
             ("right", "enter_dir", "Enter"),
             ("left", "go_up", "Back"),
+            ("s", "toggle_sort", "Sort"),
+            ("slash", "activate_search", "Search"),
+            ("escape", "clear_search", "Clear"),
         ]
 
         def __init__(self, target_path):
             super().__init__()
             self.target_path = os.path.abspath(target_path)
+            self.all_results = []
             self.results = []
             self.cursor = 0
             self.theme = "tokyo-night"
+            self.sort_mode = "size"
+            self.search_query = ""
+            self._resetting = False
 
             self.register_theme(Theme(
                 name="kanagawa",
@@ -368,6 +446,10 @@ if __name__ == "__main__":
         def compose(self) -> ComposeResult:
             yield Header()
             with Vertical(id="body"):
+                yield Label("", id="warning_label")
+                with Vertical(id="search_row"):
+                    yield Input(placeholder="Search files... ( / )", id="search_input")
+                    yield Label("[s] Size", id="sort_label")
                 yield Label(f"Current: {self.target_path}", id="path_label")
                 yield Label("", id="total_label")
                 with SilentScrollableContainer(id="items"):
@@ -390,6 +472,70 @@ if __name__ == "__main__":
         def action_go_up(self):
             self._go_up()
 
+        def action_refresh(self):
+            self.cursor = 0
+            self._reset_search()
+            self.run_worker(self.scan_and_display, exclusive=True)
+
+        def action_copy_path(self):
+            if not self.results:
+                return
+            name, size, is_dir, mtime = self.results[self.cursor]
+            full_path = os.path.join(self.target_path, name)
+            try:
+                p = subprocess.Popen(["xclip", "-selection", "clipboard"],
+                                     stdin=subprocess.PIPE)
+                p.communicate(full_path.encode())
+            except FileNotFoundError:
+                try:
+                    p = subprocess.Popen(["xsel", "--clipboard", "--input"],
+                                         stdin=subprocess.PIPE)
+                    p.communicate(full_path.encode())
+                except FileNotFoundError:
+                    return
+            self.query_one("#selected_label", Label).update(
+                f"Copied: {full_path}"
+            )
+
+        def action_toggle_sort(self):
+            modes = ["size", "name", "mtime"]
+            idx = modes.index(self.sort_mode)
+            self.sort_mode = modes[(idx + 1) % len(modes)]
+            sort_labels = {"size": "[s] Size", "name": "[s] Name", "mtime": "[s] Date"}
+            self.query_one("#sort_label", Label).update(sort_labels[self.sort_mode])
+            self._apply_sort_and_filter()
+
+        def action_activate_search(self):
+            self.query_one("#search_input", Input).focus()
+
+        def action_clear_search(self):
+            inp = self.query_one("#search_input", Input)
+            if self.search_query:
+                inp.value = ""
+                self.search_query = ""
+                self._apply_sort_and_filter()
+            inp.blur()
+
+        def on_input_changed(self, event: Input.Changed):
+            if self._resetting:
+                return
+            self.search_query = event.value.lower()
+            self._apply_sort_and_filter()
+
+        def _apply_sort_and_filter(self):
+            filtered = self.all_results
+            if self.search_query:
+                filtered = [r for r in filtered if self.search_query in r[0].lower()]
+            if self.sort_mode == "size":
+                filtered.sort(key=lambda x: x[1], reverse=True)
+            elif self.sort_mode == "name":
+                filtered.sort(key=lambda x: x[0].lower())
+            elif self.sort_mode == "mtime":
+                filtered.sort(key=lambda x: x[3], reverse=True)
+            self.results = filtered
+            self.cursor = 0
+            self._display_results()
+
         def _move_cursor(self, direction):
             if not self.results:
                 return
@@ -400,11 +546,12 @@ if __name__ == "__main__":
         def _enter_dir(self):
             if not self.results:
                 return
-            name, size, is_dir = self.results[self.cursor]
+            name, size, is_dir, mtime = self.results[self.cursor]
             if not is_dir:
                 return
             self.target_path = os.path.join(self.target_path, name)
             self.cursor = 0
+            self._reset_search()
             self.query_one("#path_label").update(f"Current: {self.target_path}")
             self.run_worker(self.scan_and_display, exclusive=True)
 
@@ -414,15 +561,22 @@ if __name__ == "__main__":
                 return
             self.target_path = parent
             self.cursor = 0
+            self._reset_search()
             self.query_one("#path_label").update(f"Current: {self.target_path}")
             self.run_worker(self.scan_and_display, exclusive=True)
+
+        def _reset_search(self):
+            self._resetting = True
+            self.search_query = ""
+            self.query_one("#search_input", Input).value = ""
+            self._resetting = False
 
         def _update_selected_label(self):
             label = self.query_one("#selected_label", Label)
             if not self.results:
                 label.update("")
                 return
-            name, size, is_dir = self.results[self.cursor]
+            name, size, is_dir, mtime = self.results[self.cursor]
             kind = "Folder" if is_dir else "File"
             full_path = os.path.join(self.target_path, name)
             icon = "[dir]" if is_dir else "[file]"
@@ -438,50 +592,35 @@ if __name__ == "__main__":
                 else:
                     row.remove_class("item_selected")
 
-        async def scan_and_display(self):
-            loop = asyncio.get_running_loop()
-
-            def do_scan():
-                try:
-                    entries = os.listdir(self.target_path)
-                except (PermissionError, FileNotFoundError, NotADirectoryError):
-                    return None
-                results = []
-                for entry in entries:
-                    full_path = os.path.join(self.target_path, entry)
-                    size = get_size(full_path)
-                    is_dir = os.path.isdir(full_path)
-                    results.append((entry, size, is_dir))
-                results.sort(key=lambda x: x[1], reverse=True)
-                total = sum(r[1] for r in results)
-                return results, total
-
-            result = await loop.run_in_executor(None, do_scan)
-
-            if result is None:
-                container = self.query_one("#items", SilentScrollableContainer)
-                container.remove_children()
-                container.mount(Static("Permission denied or path not found."))
-                return
-
-            self.results, total = result
-            self.cursor = 0
-
-            self.query_one("#total_label", Label).update(
-                f"Total: {human_size(total)}   •   {len(self.results)} items"
-            )
-
+        def _display_results(self):
             container = self.query_one("#items", SilentScrollableContainer)
             container.remove_children()
 
+            total_all = sum(r[1] for r in self.all_results)
+            self.query_one("#total_label", Label).update(
+                f"Total: {human_size(total_all)}   •   {len(self.results)} items"
+            )
+
+            warning = self.query_one("#warning_label", Label)
+            large_items = [r for r in self.all_results if total_all > 0 and r[1] > total_all * 0.8]
+            if large_items:
+                items_text = "   ".join(
+                    f"[dir]{r[0]}[/dir] ({human_size(r[1])})" for r in large_items
+                )
+                warning.update(f"  WARNING: {items_text}")
+                warning.add_class("visible")
+            else:
+                warning.update("")
+                warning.remove_class("visible")
+
             if not self.results:
-                container.mount(Static("(empty directory)"))
+                container.mount(Static("(empty directory)" if not self.all_results else "No matches"))
                 self.query_one("#selected_label", Label).update("")
                 return
 
             max_size = max((r[1] for r in self.results), default=1) or 1
 
-            for i, (name, size, is_dir) in enumerate(self.results):
+            for i, (name, size, is_dir, mtime) in enumerate(self.results):
                 icon = "[dir]" if is_dir else "[file]"
                 pct = (size / max_size) * 100 if max_size else 0
                 bar_class = size_color(pct)
@@ -502,6 +641,38 @@ if __name__ == "__main__":
                 bar.update(progress=pct)
 
             self._update_selected_label()
+
+        async def scan_and_display(self):
+            loop = asyncio.get_running_loop()
+
+            def do_scan():
+                try:
+                    entries = os.listdir(self.target_path)
+                except (PermissionError, FileNotFoundError, NotADirectoryError):
+                    return None
+                results = []
+                for entry in entries:
+                    full_path = os.path.join(self.target_path, entry)
+                    size = get_size(full_path)
+                    is_dir = os.path.isdir(full_path)
+                    try:
+                        mtime = os.path.getmtime(full_path)
+                    except (OSError, PermissionError):
+                        mtime = 0
+                    results.append((entry, size, is_dir, mtime))
+                total = sum(r[1] for r in results)
+                return results, total
+
+            result = await loop.run_in_executor(None, do_scan)
+
+            if result is None:
+                container = self.query_one("#items", SilentScrollableContainer)
+                container.remove_children()
+                container.mount(Static("Permission denied or path not found."))
+                return
+
+            self.all_results, total = result
+            self._apply_sort_and_filter()
 
     target = sys.argv[1] if len(sys.argv) > 1 else "."
     if not os.path.isdir(target):
