@@ -25,7 +25,7 @@ A terminal-based disk space visualizer built with Python and Textual. Navigate d
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/diskviz.git
+git clone https://github.com/PzN2s/diskviz.git
 cd diskviz
 
 # Run directly
@@ -35,14 +35,14 @@ python3 diskviz.py
 ### One-Line Install
 
 ```bash
-curl -O https://raw.githubusercontent.com/yourusername/diskviz/main/diskviz.py && python3 diskviz.py
+curl -O https://raw.githubusercontent.com/PzN2s/diskviz/main/diskviz.py && python3 diskviz.py
 ```
 
 ### System-Wide Install
 
 ```bash
 # Download
-curl -O https://raw.githubusercontent.com/yourusername/diskviz/main/diskviz.py
+curl -O https://raw.githubusercontent.com/PzN2s/diskviz/main/diskviz.py
 
 # Make executable
 chmod +x diskviz.py
