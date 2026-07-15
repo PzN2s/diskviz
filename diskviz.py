@@ -59,7 +59,7 @@ def ensure_deps():
         subprocess.check_call(["uv", "--version"],
                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         print("Installing textual via uv...")
-        subprocess.check_call(["uv", "pip", "install", "textual"])
+        subprocess.check_call(["uv", "pip", "install", "--system", "textual"])
         return
     except Exception:
         pass
