@@ -297,7 +297,6 @@ if __name__ == "__main__":
             self.all_results = []
             self.results = []
             self.cursor = 0
-            self.theme = "tokyo-night"
             self.sort_mode = "size"
             self.search_query = ""
             self._resetting = False
@@ -523,7 +522,7 @@ if __name__ == "__main__":
             self._apply_sort_and_filter()
 
         def _apply_sort_and_filter(self):
-            filtered = self.all_results
+            filtered = list(self.all_results)
             if self.search_query:
                 filtered = [r for r in filtered if self.search_query in r[0].lower()]
             if self.sort_mode == "size":
@@ -579,7 +578,7 @@ if __name__ == "__main__":
             name, size, is_dir, mtime = self.results[self.cursor]
             kind = "Folder" if is_dir else "File"
             full_path = os.path.join(self.target_path, name)
-            icon = "[dir]" if is_dir else "[file]"
+            icon = "[bold cyan]DIR[/bold cyan]" if is_dir else "[dim]file[/dim]"
             label.update(f"{icon} {name}  •  {kind}  •  {human_size(size)}  •  {full_path}")
 
         def _refresh_cursor(self):
@@ -605,7 +604,7 @@ if __name__ == "__main__":
             large_items = [r for r in self.all_results if total_all > 0 and r[1] > total_all * 0.8]
             if large_items:
                 items_text = "   ".join(
-                    f"[dir]{r[0]}[/dir] ({human_size(r[1])})" for r in large_items
+                    f"[bold]{r[0]}[/bold] ({human_size(r[1])})" for r in large_items
                 )
                 warning.update(f"  WARNING: {items_text}")
                 warning.add_class("visible")
@@ -621,7 +620,7 @@ if __name__ == "__main__":
             max_size = max((r[1] for r in self.results), default=1) or 1
 
             for i, (name, size, is_dir, mtime) in enumerate(self.results):
-                icon = "[dir]" if is_dir else "[file]"
+                icon = "[bold cyan]DIR[/bold cyan]" if is_dir else "[dim]file[/dim]"
                 pct = (size / max_size) * 100 if max_size else 0
                 bar_class = size_color(pct)
                 selected = i == self.cursor
