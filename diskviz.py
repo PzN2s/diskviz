@@ -58,7 +58,7 @@ def ensure_deps():
 
     if distro == "nixos":
         print("NixOS detected. Use nix-shell to run:")
-        print("  nix-shell -p python3Packages.textual --run 'python3 diskviz.py .'")
+        print("  nix-shell -p python3 python3Packages.textual xclip --run 'python3 diskviz.py .'")
         sys.exit(1)
 
     uv_found = False
