@@ -225,9 +225,10 @@ if __name__ == "__main__":
             height: 3;
             margin: 0;
             padding: 0;
+            border-bottom: solid $panel;
         }
-        .item_row + .item_row {
-            border-top: tall $panel;
+        .item_row:last-child {
+            border-bottom: hidden;
         }
         .item_label {
             width: 100%;
