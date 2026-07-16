@@ -75,14 +75,8 @@ install_package() {
             sudo swupd bundle-add "$pkg"
             ;;
         nixos)
-            warn "NixOS detected. Using nix-env..."
-            if command -v nix-env &>/dev/null; then
-                nix-env -iA nixpkgs."$pkg" 2>/dev/null || true
-            else
-                warn "nix-env not available. Run manually:"
-                echo "  nix-shell -p python3Packages.textual xclip --run 'python3 diskviz.py'"
-                return 1
-            fi
+            warn "NixOS detected. Using nix-shell (recommended for NixOS)."
+            return 0
             ;;
         *)
             warn "Unknown distro ($distro). Trying package manager..."
@@ -154,7 +148,9 @@ install_pip() {
             install_package "python3-basic" || true
             ;;
         nixos)
-            install_package "python3Packages.pip" || true
+            warn "NixOS: Use nix-shell to run DiskViz:"
+            echo "  nix-shell -p python3 python3Packages.textual xclip --run 'python3 diskviz.py'"
+            return 0
             ;;
         *)
             if command -v ensurepip &>/dev/null; then
@@ -206,12 +202,15 @@ if python3 -c "import textual" 2>/dev/null; then
     info "textual already installed"
 else
     info "Installing textual..."
-    python3 -m pip install --user textual 2>/dev/null || python3 -m pip install textual
-    if ! python3 -c "import textual" 2>/dev/null; then
-        error "Failed to install textual."
+    if python3 -m pip install --user textual 2>&1; then
+        info "textual installed (--user)"
+    elif python3 -m pip install textual 2>&1; then
+        info "textual installed"
+    else
+        error "Failed to install textual. Check permissions or network."
+        error "Manual: python3 -m pip install textual"
         exit 1
     fi
-    info "textual installed"
 fi
 
 # --- Install xclip ---
