@@ -448,7 +448,7 @@ if __name__ == "__main__":
                 yield Label("", id="warning_label")
                 with Vertical(id="search_row"):
                     yield Input(placeholder="Search files... ( / )", id="search_input")
-                    yield Label("[s] Size", id="sort_label")
+                    yield Label("Sort: Size", id="sort_label")
                 yield Label(f"Current: {self.target_path}", id="path_label")
                 yield Label("", id="total_label")
                 with SilentScrollableContainer(id="items"):
@@ -500,7 +500,7 @@ if __name__ == "__main__":
             modes = ["size", "name", "mtime"]
             idx = modes.index(self.sort_mode)
             self.sort_mode = modes[(idx + 1) % len(modes)]
-            sort_labels = {"size": "[s] Size", "name": "[s] Name", "mtime": "[s] Date"}
+            sort_labels = {"size": "Sort: Size", "name": "Sort: Name", "mtime": "Sort: Date"}
             self.query_one("#sort_label", Label).update(sort_labels[self.sort_mode])
             self._apply_sort_and_filter()
 
