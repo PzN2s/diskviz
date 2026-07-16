@@ -102,8 +102,12 @@ def ensure_deps():
 def get_size(path):
     total = 0
     try:
-        if os.path.isfile(path) or os.path.islink(path):
+        if os.path.isfile(path):
             return os.path.getsize(path)
+        if os.path.islink(path):
+            target = os.path.realpath(path)
+            if os.path.isfile(target):
+                return os.path.getsize(target)
         for dirpath, dirnames, filenames in os.walk(path, onerror=lambda e: None):
             for f in filenames:
                 fp = os.path.join(dirpath, f)
@@ -123,15 +127,6 @@ def human_size(num_bytes):
             return f"{num_bytes:.1f} {unit}"
         num_bytes /= 1024
     return f"{num_bytes:.1f} PB"
-
-
-def size_color(pct):
-    if pct >= 66:
-        return "bar-red"
-    elif pct >= 33:
-        return "bar-yellow"
-    else:
-        return "bar-green"
 
 
 if __name__ == "__main__":
@@ -161,7 +156,7 @@ if __name__ == "__main__":
 
     import asyncio
     from textual.app import App, ComposeResult, Theme
-    from textual.widgets import Header, Footer, Static, ProgressBar, Label, Input
+    from textual.widgets import Header, Footer, Static, Label, Input
     from textual.containers import Vertical, ScrollableContainer
 
     class SilentScrollableContainer(ScrollableContainer):
@@ -211,6 +206,8 @@ if __name__ == "__main__":
         #total_label {
             width: 100%;
             height: 1;
+            content-align: center middle;
+            text-align: center;
             color: $success;
             text-style: bold;
             margin: 0 0 1 0;
@@ -223,33 +220,36 @@ if __name__ == "__main__":
             padding: 0;
         }
         .item_row {
-            height: 3;
+            height: 1;
             margin: 0;
             padding: 0;
-            border-bottom: solid $panel;
-        }
-        .item_row:last-child {
-            border-bottom: hidden;
+            layout: horizontal;
         }
         .item_label {
-            width: 100%;
             color: $foreground;
             padding: 0 1;
         }
-        .item_selected {
-            background: $panel;
-            border: tall $primary;
+        .item_name {
+            width: 1fr;
+        }
+        .item_size {
+            width: auto;
+            text-align: right;
+            min-width: 10;
         }
         .item_selected .item_label {
             color: $primary;
             text-style: bold;
+            background: $panel;
         }
         #selected_label {
             width: 100%;
             height: 1;
+            content-align: center middle;
             color: $accent;
             text-style: italic;
             margin: 1 0 0 0;
+            text-align: center;
         }
         #warning_label {
             width: 100%;
@@ -259,19 +259,12 @@ if __name__ == "__main__":
             padding: 0 1;
             margin: 0 0 1 0;
             background: $surface;
-            border: round $error;
+            border: heavy $error;
             display: none;
         }
         #warning_label.visible {
             display: block;
         }
-        ProgressBar Bar {
-            width: 100%;
-        }
-        .bar-red > Bar > .bar--bar { color: $error; }
-        .bar-yellow > Bar > .bar--bar { color: $warning; }
-        .bar-green > Bar > .bar--bar { color: $success; }
-        ProgressBar > .bar--indeterminate { color: $accent; }
         """
         TITLE = "✦ DiskViz"
         SUB_TITLE = "DEV:Reham"
@@ -490,6 +483,9 @@ if __name__ == "__main__":
                                          stdin=subprocess.PIPE)
                     p.communicate(full_path.encode())
                 except FileNotFoundError:
+                    self.query_one("#selected_label", Label).update(
+                        "[dim]No clipboard tool found (install xclip or xsel)[/dim]"
+                    )
                     return
             self.query_one("#selected_label", Label).update(
                 f"Copied: {full_path}"
@@ -547,7 +543,7 @@ if __name__ == "__main__":
             name, size, is_dir, mtime = self.results[self.cursor]
             if not is_dir:
                 return
-            self.target_path = os.path.join(self.target_path, name)
+            self.target_path = os.path.abspath(os.path.join(self.target_path, name))
             self.cursor = 0
             self._reset_search()
             self.query_one("#path_label").update(self.target_path)
@@ -575,10 +571,8 @@ if __name__ == "__main__":
                 label.update("")
                 return
             name, size, is_dir, mtime = self.results[self.cursor]
-            kind = "Folder" if is_dir else "File"
-            full_path = os.path.join(self.target_path, name)
-            icon = "[bold cyan]DIR[/bold cyan]" if is_dir else "[dim]fil[/dim]"
-            label.update(f"{icon} {name}  \u00b7  {kind}  \u00b7  {human_size(size)}  \u00b7  {full_path}")
+            icon = "[bold cyan]DIR[/bold cyan]" if is_dir else "[dim]file[/dim]"
+            label.update(f"{icon} {name}  \u00b7  {human_size(size)}")
 
         def _refresh_cursor(self):
             container = self.query_one("#items", SilentScrollableContainer)
@@ -595,9 +589,16 @@ if __name__ == "__main__":
             container.remove_children()
 
             total_all = sum(r[1] for r in self.all_results)
-            self.query_one("#total_label", Label).update(
-                f"Total: {human_size(total_all)}   •   {len(self.results)} items"
-            )
+            count_all = len(self.all_results)
+            shown = len(self.results)
+            if self.search_query and shown != count_all:
+                self.query_one("#total_label", Label).update(
+                    f"Total: {human_size(total_all)}   \u00b7   {shown}/{count_all} items"
+                )
+            else:
+                self.query_one("#total_label", Label).update(
+                    f"Total: {human_size(total_all)}   \u00b7   {count_all} items"
+                )
 
             warning = self.query_one("#warning_label", Label)
             large_items = [r for r in self.all_results if total_all > 0 and r[1] > total_all * 0.8]
@@ -612,31 +613,29 @@ if __name__ == "__main__":
                 warning.remove_class("visible")
 
             if not self.results:
-                container.mount(Static("(empty directory)" if not self.all_results else "No matches"))
+                msg = "(empty directory)" if not self.all_results else "No matches"
+                container.mount(Static(f"[dim]{msg}[/dim]"))
                 self.query_one("#selected_label", Label).update("")
                 return
 
-            max_size = max((r[1] for r in self.results), default=1) or 1
-
             for i, (name, size, is_dir, mtime) in enumerate(self.results):
-                icon = "[bold cyan]DIR[/bold cyan] " if is_dir else "[dim]fil[/dim] "
-                pct = (size / max_size) * 100 if max_size else 0
-                bar_class = size_color(pct)
+                icon = "[bold cyan]DIR[/bold cyan] " if is_dir else "[dim]file[/dim] "
                 selected = i == self.cursor
-                indicator = "\u25b8 " if selected else "  "
+                indicator = "[bold cyan]\u25cf[/bold cyan] " if selected else "  "
+                trunc_name = name[:40] + "..." if len(name) > 40 else name
+                size_str = human_size(size)
 
                 row_cls = "item_row item_selected" if selected else "item_row"
                 row = Vertical(classes=row_cls)
                 container.mount(row)
                 row.mount(Static(
-                    f"{indicator}{icon}{name}   [b]{human_size(size)}[/b]",
-                    classes="item_label",
+                    f"{indicator}{icon}{trunc_name}",
+                    classes="item_label item_name",
                 ))
-                bar = ProgressBar(
-                    total=100, show_eta=False, show_percentage=False, classes=bar_class
-                )
-                row.mount(bar)
-                bar.update(progress=pct)
+                row.mount(Static(
+                    f"[b]{size_str}[/b]",
+                    classes="item_label item_size",
+                ))
 
             self._update_selected_label()
 
@@ -666,7 +665,11 @@ if __name__ == "__main__":
             if result is None:
                 container = self.query_one("#items", SilentScrollableContainer)
                 container.remove_children()
-                container.mount(Static("Permission denied or path not found."))
+                container.mount(Static("[dim]Permission denied or path not found.[/dim]"))
+                self.all_results = []
+                self.results = []
+                self.query_one("#total_label", Label).update("")
+                self.query_one("#selected_label", Label).update("")
                 return
 
             self.all_results, total = result
