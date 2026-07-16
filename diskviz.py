@@ -178,6 +178,7 @@ if __name__ == "__main__":
         #body {
             width: 76;
             height: auto;
+            max-height: 100%;
         }
         #search_row {
             width: 100%;
@@ -209,15 +210,14 @@ if __name__ == "__main__":
         }
         #total_label {
             width: 100%;
-            height: 3;
-            content-align: center middle;
+            height: 1;
             color: $success;
             text-style: bold;
             margin: 0 0 1 0;
         }
         #items {
             width: 100%;
-            height: 20;
+            height: 14;
             border: heavy $primary;
             background: $surface;
             padding: 0;
@@ -242,8 +242,7 @@ if __name__ == "__main__":
         }
         #selected_label {
             width: 100%;
-            height: 3;
-            content-align: center middle;
+            height: 1;
             color: $accent;
             text-style: italic;
             margin: 1 0 0 0;
