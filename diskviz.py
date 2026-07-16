@@ -177,8 +177,7 @@ if __name__ == "__main__":
         }
         #body {
             width: 76;
-            height: auto;
-            max-height: 100%;
+            height: 100%;
         }
         #search_row {
             width: 100%;
@@ -217,7 +216,7 @@ if __name__ == "__main__":
         }
         #items {
             width: 100%;
-            height: 20;
+            height: 1fr;
             border: heavy $primary;
             background: $surface;
             padding: 0;
@@ -226,6 +225,9 @@ if __name__ == "__main__":
             height: 3;
             margin: 0;
             padding: 0;
+        }
+        .item_row + .item_row {
+            border-top: tall $panel;
         }
         .item_label {
             width: 100%;
