@@ -216,7 +216,7 @@ if __name__ == "__main__":
         }
         #items {
             width: 100%;
-            height: 12;
+            height: 20;
             border: heavy $primary;
             background: $surface;
             padding: 0;
