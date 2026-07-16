@@ -1,19 +1,18 @@
 # DiskViz
 
-A terminal-based disk space visualizer built with Python and Textual. Navigate directories, view file sizes with color-coded progress bars, search and sort in real-time, and switch between 31 themes.
+A terminal-based disk space visualizer built with Python and Textual. Navigate directories, view file sizes, search and sort in real-time, and switch between 31 themes.
 
 ![DiskViz Screenshot](image.png)
 
 ## Features
 
 - Interactive directory browsing with keyboard navigation
-- Color-coded size bars (red for large, yellow for medium, green for small)
+- Compact one-line items with right-aligned sizes
 - Async scanning for non-blocking UI on large directories
 - 31 built-in and custom themes via fuzzy search
 - Real-time search/filter to quickly find files
 - Sort toggle by size, name, or modification time
 - Large item warning banner (>80% of total size)
-- Row borders for clear visual separation between items
 - Automatic dependency installation on first run
 - Support for 20+ Linux distributions
 - Single file, zero configuration
@@ -196,12 +195,11 @@ DiskViz detects your Linux distribution and provides the correct installation co
 
 1. DiskViz scans the target directory and calculates the size of each file and subdirectory
 2. Results are sorted by size (largest first), with option to sort by name or date
-3. Each entry displays with a color-coded progress bar relative to the largest item
-4. Row borders provide clear visual separation between items
-5. Use real-time search to filter items instantly as you type
-6. Warning banner appears if any item exceeds 80% of total size
-7. The selected item shows its full path and metadata at the bottom
-8. All scanning runs asynchronously to keep the UI responsive
+3. Each entry displays as a compact row with name on the left and size on the right
+4. Use real-time search to filter items instantly as you type
+5. Warning banner appears if any item exceeds 80% of total size
+6. The selected item shows its name, type, and size at the bottom
+7. All scanning runs asynchronously to keep the UI responsive
 
 ## License
 
