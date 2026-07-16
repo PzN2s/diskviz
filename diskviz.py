@@ -181,7 +181,7 @@ if __name__ == "__main__":
         }
         #search_row {
             width: 100%;
-            height: auto;
+            height: 3;
             layout: horizontal;
             margin: 0 0 1 0;
         }
@@ -199,21 +199,20 @@ if __name__ == "__main__":
         }
         #path_label {
             width: 100%;
-            height: 1;
+            height: 3;
+            content-align: center middle;
             text-style: bold;
             color: $primary;
-            text-align: center;
-            padding: 0 1;
             background: $surface;
-            border: tall $primary;
+            border: double $primary;
             margin: 0 0 1 0;
         }
         #total_label {
             width: 100%;
-            height: 1;
+            height: 3;
+            content-align: center middle;
             color: $success;
             text-style: bold;
-            padding: 0;
             margin: 0 0 1 0;
         }
         #items {
@@ -227,10 +226,6 @@ if __name__ == "__main__":
             height: 3;
             margin: 0;
             padding: 0;
-            border-bottom: tall $panel;
-        }
-        .item_row:last-child {
-            border-bottom: hidden;
         }
         .item_label {
             width: 100%;
@@ -238,9 +233,8 @@ if __name__ == "__main__":
             padding: 0 1;
         }
         .item_selected {
-            background: $surface;
+            background: $panel;
             border: tall $primary;
-            border-bottom: tall $primary;
         }
         .item_selected .item_label {
             color: $primary;
@@ -248,10 +242,10 @@ if __name__ == "__main__":
         }
         #selected_label {
             width: 100%;
-            height: 1;
+            height: 3;
+            content-align: center middle;
             color: $accent;
             text-style: italic;
-            padding: 0;
             margin: 1 0 0 0;
         }
         #warning_label {
@@ -262,7 +256,7 @@ if __name__ == "__main__":
             padding: 0 1;
             margin: 0 0 1 0;
             background: $surface;
-            border: tall $error;
+            border: round $error;
             display: none;
         }
         #warning_label.visible {
@@ -580,8 +574,8 @@ if __name__ == "__main__":
             name, size, is_dir, mtime = self.results[self.cursor]
             kind = "Folder" if is_dir else "File"
             full_path = os.path.join(self.target_path, name)
-            icon = "[bold cyan]DIR [/bold cyan]" if is_dir else "[dim]file[/dim]"
-            label.update(f"{icon} {name}  •  {kind}  •  {human_size(size)}  •  {full_path}")
+            icon = "[bold cyan]DIR[/bold cyan]" if is_dir else "[dim]fil[/dim]"
+            label.update(f"{icon} {name}  \u00b7  {kind}  \u00b7  {human_size(size)}  \u00b7  {full_path}")
 
         def _refresh_cursor(self):
             container = self.query_one("#items", SilentScrollableContainer)
@@ -622,17 +616,17 @@ if __name__ == "__main__":
             max_size = max((r[1] for r in self.results), default=1) or 1
 
             for i, (name, size, is_dir, mtime) in enumerate(self.results):
-                icon = "[bold cyan]DIR [/bold cyan]" if is_dir else "[dim]file[/dim]"
+                icon = "[bold cyan]DIR[/bold cyan] " if is_dir else "[dim]fil[/dim] "
                 pct = (size / max_size) * 100 if max_size else 0
                 bar_class = size_color(pct)
                 selected = i == self.cursor
-                indicator = ">" if selected else " "
+                indicator = "\u25b8 " if selected else "  "
 
                 row_cls = "item_row item_selected" if selected else "item_row"
                 row = Vertical(classes=row_cls)
                 container.mount(row)
                 row.mount(Static(
-                    f" {indicator} {icon} {name}   [b]{human_size(size)}[/b]",
+                    f"{indicator}{icon}{name}   [b]{human_size(size)}[/b]",
                     classes="item_label",
                 ))
                 bar = ProgressBar(
