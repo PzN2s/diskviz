@@ -183,7 +183,7 @@ if __name__ == "__main__":
             width: 100%;
             height: auto;
             layout: horizontal;
-            margin: 0;
+            margin: 0 0 1 0;
         }
         #search_input {
             width: 1fr;
@@ -191,27 +191,26 @@ if __name__ == "__main__":
             margin: 0 1 0 0;
         }
         #sort_label {
-            width: 16;
+            width: 14;
             height: 3;
             content-align: right middle;
             color: $accent;
             text-style: bold;
-            padding: 0 1;
         }
         #path_label {
             width: 100%;
-            height: auto;
+            height: 1;
             text-style: bold;
             color: $primary;
             text-align: center;
             padding: 0 1;
-            margin: 1 0;
             background: $surface;
-            border: heavy $primary;
+            border: tall $primary;
+            margin: 0 0 1 0;
         }
         #total_label {
             width: 100%;
-            height: auto;
+            height: 1;
             color: $success;
             text-style: bold;
             padding: 0;
@@ -227,20 +226,21 @@ if __name__ == "__main__":
         .item_row {
             height: 3;
             margin: 0;
-            padding: 0 1;
-            border: tall transparent;
+            padding: 0;
             border-bottom: tall $panel;
         }
         .item_row:last-child {
-            border-bottom: tall transparent;
+            border-bottom: hidden;
         }
         .item_label {
             width: 100%;
             color: $foreground;
+            padding: 0 1;
         }
         .item_selected {
             background: $surface;
             border: tall $primary;
+            border-bottom: tall $primary;
         }
         .item_selected .item_label {
             color: $primary;
@@ -248,7 +248,7 @@ if __name__ == "__main__":
         }
         #selected_label {
             width: 100%;
-            height: auto;
+            height: 1;
             color: $accent;
             text-style: italic;
             padding: 0;
@@ -262,7 +262,7 @@ if __name__ == "__main__":
             padding: 0 1;
             margin: 0 0 1 0;
             background: $surface;
-            border: round $error;
+            border: tall $error;
             display: none;
         }
         #warning_label.visible {
@@ -628,12 +628,12 @@ if __name__ == "__main__":
                 selected = i == self.cursor
                 indicator = ">" if selected else " "
 
-                row = Vertical(classes="item_row")
+                row_cls = "item_row item_selected" if selected else "item_row"
+                row = Vertical(classes=row_cls)
                 container.mount(row)
-                label_cls = "item_label item_selected" if selected else "item_label"
                 row.mount(Static(
                     f" {indicator} {icon} {name}   [b]{human_size(size)}[/b]",
-                    classes=label_cls,
+                    classes="item_label",
                 ))
                 bar = ProgressBar(
                     total=100, show_eta=False, show_percentage=False, classes=bar_class
