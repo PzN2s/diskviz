@@ -192,6 +192,17 @@ if [ "$PY_MAJOR" -lt 3 ] || ([ "$PY_MAJOR" -eq 3 ] && [ "$PY_MINOR" -lt 8 ]); th
 fi
 info "Python $PY_VER found"
 
+# --- NixOS early exit ---
+if [ "$(detect_distro)" = "nixos" ]; then
+    echo ""
+    warn "NixOS detected. DiskViz runs best via nix-shell:"
+    echo ""
+    echo "  nix-shell -p python3 python3Packages.textual xclip --run 'python3 diskviz.py'"
+    echo ""
+    info "Exiting. No changes were made to your system."
+    exit 0
+fi
+
 # --- Check pip ---
 if ! python3 -m pip --version &>/dev/null; then
     warn "pip not found. Installing..."
