@@ -112,6 +112,8 @@ python3 diskviz.py ..
 | `/` | Focus search bar to filter items |
 | `Escape` | Clear search / exit search |
 | `s` | Cycle sort mode (Size / Name / Date) |
+| `r` | Refresh current directory scan |
+| `c` | Copy selected item path to clipboard |
 | `t` | Open theme picker |
 | `q` | Quit |
 
@@ -179,10 +181,10 @@ DiskViz detects your Linux distribution and provides the correct installation co
 
 | Distribution | Package Manager |
 |-------------|-----------------|
-| Ubuntu, Debian, Linux Mint, Pop!_OS, Elementary | apt |
+| Ubuntu, Debian, Linux Mint, Pop!_OS, Elementary, Kali, Zorin | apt |
 | Fedora, RHEL, Rocky, Alma | dnf |
 | CentOS | yum |
-| Arch, Manjaro, EndeavourOS | pacman |
+| Arch, Manjaro, EndeavourOS, Garuda, Artix | pacman |
 | Alpine | apk |
 | openSUSE Leap/Tumbleweed | zypper |
 | Void | xbps |
