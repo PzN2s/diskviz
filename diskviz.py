@@ -207,7 +207,7 @@ if __name__ == "__main__":
             padding: 0 1;
             margin: 1 0;
             background: $surface;
-            border: round $primary;
+            border: heavy $primary;
         }
         #total_label {
             width: 100%;
@@ -451,7 +451,7 @@ if __name__ == "__main__":
                 with Vertical(id="search_row"):
                     yield Input(placeholder="Search files... ( / )", id="search_input")
                     yield Label("Sort: Size", id="sort_label")
-                yield Label(f"Current: {self.target_path}", id="path_label")
+                yield Label(self.target_path, id="path_label")
                 yield Label("", id="total_label")
                 with SilentScrollableContainer(id="items"):
                     yield Static("Calculating sizes... please wait")
@@ -553,7 +553,7 @@ if __name__ == "__main__":
             self.target_path = os.path.join(self.target_path, name)
             self.cursor = 0
             self._reset_search()
-            self.query_one("#path_label").update(f"Current: {self.target_path}")
+            self.query_one("#path_label").update(self.target_path)
             self.run_worker(self.scan_and_display, exclusive=True)
 
         def _go_up(self):
@@ -563,7 +563,7 @@ if __name__ == "__main__":
             self.target_path = parent
             self.cursor = 0
             self._reset_search()
-            self.query_one("#path_label").update(f"Current: {self.target_path}")
+            self.query_one("#path_label").update(self.target_path)
             self.run_worker(self.scan_and_display, exclusive=True)
 
         def _reset_search(self):
