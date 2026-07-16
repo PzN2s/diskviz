@@ -219,12 +219,12 @@ if __name__ == "__main__":
             height: 22;
             border: heavy $primary;
             background: $surface;
-            padding: 0 1;
+            padding: 1 0;
         }
         .item_row {
             height: 3;
             margin: 0;
-            padding: 0 1;
+            padding: 0;
             border-bottom: dashed $panel;
         }
         .item_row:last-child {
@@ -232,12 +232,12 @@ if __name__ == "__main__":
         }
         .item_label {
             color: $foreground;
+            width: 100%;
         }
         .item_selected {
             background: $surface;
             border-left: tall $primary;
             border-bottom: dashed $primary;
-            padding-left: 1;
         }
         .item_selected:last-child {
             border-bottom: hidden;
@@ -578,7 +578,7 @@ if __name__ == "__main__":
             name, size, is_dir, mtime = self.results[self.cursor]
             kind = "Folder" if is_dir else "File"
             full_path = os.path.join(self.target_path, name)
-            icon = "[bold cyan]DIR[/bold cyan]" if is_dir else "[dim]file[/dim]"
+            icon = "[bold cyan]DIR [/bold cyan]" if is_dir else "[dim]file[/dim]"
             label.update(f"{icon} {name}  •  {kind}  •  {human_size(size)}  •  {full_path}")
 
         def _refresh_cursor(self):
@@ -620,11 +620,11 @@ if __name__ == "__main__":
             max_size = max((r[1] for r in self.results), default=1) or 1
 
             for i, (name, size, is_dir, mtime) in enumerate(self.results):
-                icon = "[bold cyan]DIR[/bold cyan]" if is_dir else "[dim]file[/dim]"
+                icon = "[bold cyan]DIR [/bold cyan]" if is_dir else "[dim]file[/dim]"
                 pct = (size / max_size) * 100 if max_size else 0
                 bar_class = size_color(pct)
                 selected = i == self.cursor
-                indicator = "▸ " if selected else "  "
+                indicator = "[bold]>[/bold] " if selected else "  "
 
                 row = Vertical(classes="item_row")
                 container.mount(row)
