@@ -225,7 +225,7 @@ if __name__ == "__main__":
             height: 3;
             margin: 0;
             padding: 0 1;
-            border-bottom: dashed $panel;
+            border-bottom: wide $panel;
         }
         .item_row:last-child {
             border-bottom: hidden;
@@ -236,7 +236,7 @@ if __name__ == "__main__":
         .item_selected {
             background: $surface;
             border-left: tall $primary;
-            border-bottom: dashed $primary;
+            border-bottom: wide $primary;
             padding-left: 1;
         }
         .item_selected:last-child {
