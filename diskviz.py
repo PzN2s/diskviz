@@ -203,9 +203,9 @@ if __name__ == "__main__":
             color: $primary;
             width: 100%;
             text-align: center;
-            padding: 1 2;
+            padding: 0 1;
             background: $surface;
-            border: tall $primary;
+            border: round $primary;
             margin: 0 0 1 0;
         }
         #total_label {
@@ -217,15 +217,15 @@ if __name__ == "__main__":
         #items {
             width: 80;
             height: 22;
-            border: round $primary;
+            border: heavy $primary;
             background: $surface;
-            padding: 1 2;
+            padding: 0 1;
         }
         .item_row {
             height: 3;
             margin: 0;
             padding: 0 1;
-            border-bottom: wide $panel;
+            border-bottom: dashed $panel;
         }
         .item_row:last-child {
             border-bottom: hidden;
@@ -236,7 +236,7 @@ if __name__ == "__main__":
         .item_selected {
             background: $surface;
             border-left: tall $primary;
-            border-bottom: wide $primary;
+            border-bottom: dashed $primary;
             padding-left: 1;
         }
         .item_selected:last-child {
@@ -260,7 +260,7 @@ if __name__ == "__main__":
             padding: 0 1;
             margin: 0 0 1 0;
             background: $surface;
-            border: tall $error;
+            border: round $error;
             display: none;
         }
         #warning_label.visible {
