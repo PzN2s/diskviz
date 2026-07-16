@@ -201,6 +201,7 @@ if __name__ == "__main__":
             width: 100%;
             height: 3;
             content-align: center middle;
+            text-align: center;
             text-style: bold;
             color: $primary;
             background: $surface;
