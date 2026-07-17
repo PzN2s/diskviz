@@ -2,7 +2,9 @@
 
 A terminal-based disk space visualizer built with Python and Textual. Navigate directories, view file sizes, search and sort in real-time, and switch between 31 themes.
 
-![DiskViz Screenshot](https://github.com/PzN2s/diskviz/raw/main/image.png)
+<p align="center">
+  <img src="https://github.com/PzN2s/diskviz/raw/main/image.png" alt="DiskViz Screenshot" width="700">
+</p>
 
 ## Features
 
