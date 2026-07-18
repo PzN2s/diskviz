@@ -129,6 +129,9 @@ python3 diskviz.py /var/log
 
 # Show version
 python3 diskviz.py --version
+
+# Skip install confirmation prompt (for automation)
+python3 diskviz.py --no-confirm
 ```
 
 ## Themes

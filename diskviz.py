@@ -61,42 +61,51 @@ def ensure_deps():
         print("  nix-shell -p python3 python3Packages.textual xclip --run 'python3 diskviz.py .'")
         sys.exit(1)
 
-    uv_found = False
-    try:
-        subprocess.check_call(["uv", "--version"],
-                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        uv_found = True
-    except Exception:
-        pass
+    print("DiskViz requires 'textual' which is not installed.")
+    print()
 
-    if uv_found:
+    if "--no-confirm" not in sys.argv:
         try:
-            print("Installing textual via uv...")
-            subprocess.check_call(["uv", "pip", "install", "--system", "textual"])
-            return
-        except Exception:
-            pass
-        try:
-            subprocess.check_call(["uv", "pip", "install", "textual"])
-            return
-        except Exception:
-            pass
+            answer = input("Install textual now? [y/N] ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            print("\nAborted.")
+            sys.exit(1)
+        if answer not in ("y", "yes"):
+            print()
+            print("Install manually:")
+            print(f"  {pip_install}")
+            print("  or: pip3 install textual")
+            sys.exit(1)
+        print()
+
+    print("Verifying package integrity (hash pinning)...")
+    print()
+
+    verified = verify_and_download_textual()
+
+    if not verified:
+        print()
+        print("SECURITY: Could not verify textual package.")
+        print("This could be a network issue or a MITM attack.")
+        print()
+        print("Install manually from a trusted source:")
+        print(f"  {pip_install}")
+        print("  or: pip3 install textual")
+        print("  Verify hash at: https://pypi.org/project/textual/")
+        sys.exit(1)
 
     try:
-        subprocess.check_call([sys.executable, "-m", "pip", "--version"],
-                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        print("Installing textual via pip...")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "textual"])
-        return
-    except Exception:
-        pass
-
-    print("Error: Could not install textual automatically.")
-    print(f"Install manually for {distro or 'your distro'}:")
-    print(f"  {pip_install}")
-    print("  or: uv pip install textual")
-    print("  or: pip3 install textual")
-    sys.exit(1)
+        subprocess.check_call([sys.executable, "-m", "pip", "install", verified])
+    except Exception as e:
+        print(f"pip install failed: {e}")
+        print("Try manually: pip3 install textual")
+        sys.exit(1)
+    finally:
+        try:
+            os.remove(verified)
+            os.rmdir(os.path.dirname(verified))
+        except OSError:
+            pass
 
 
 def get_size(path):
@@ -129,11 +138,54 @@ def human_size(num_bytes):
     return f"{num_bytes:.1f} PB"
 
 
+TEXTUAL_VERSION = "8.2.8"
+TEXTUAL_WHEEL = "textual-8.2.8-py3-none-any.whl"
+TEXTUAL_SHA256 = "267375fd402dc8d981457212efa71f0e3365fd17bba144ba9bb3ed7563cb374a"
+PYPI_WHEEL_URL = f"https://files.pythonhosted.org/packages/py3/t/textual/{TEXTUAL_WHEEL}"
+
+
+def verify_and_download_textual():
+    import hashlib
+    import tempfile
+    try:
+        from urllib.request import urlopen, Request
+        from urllib.error import URLError
+    except ImportError:
+        return False
+
+    print(f"Downloading textual {TEXTUAL_VERSION} from PyPI...")
+    try:
+        req = Request(PYPI_WHEEL_URL, headers={"User-Agent": "diskviz/1.0"})
+        with urlopen(req, timeout=30) as resp:
+            content = resp.read()
+    except (URLError, OSError) as e:
+        print(f"WARNING: Download failed: {e}")
+        return False
+
+    actual_hash = hashlib.sha256(content).hexdigest()
+
+    if actual_hash != TEXTUAL_SHA256:
+        print(f"SECURITY ALERT: Hash mismatch!")
+        print(f"  Expected: {TEXTUAL_SHA256}")
+        print(f"  Got:      {actual_hash}")
+        print(f"Possible MITM attack or corrupted download.")
+        return False
+
+    print(f"VERIFIED: Hash matches for {TEXTUAL_WHEEL}")
+
+    tmpdir = tempfile.mkdtemp()
+    tmp_path = os.path.join(tmpdir, TEXTUAL_WHEEL)
+    with open(tmp_path, "wb") as f:
+        f.write(content)
+    return tmp_path
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] in ("-h", "--help"):
         print("DiskViz - Terminal disk space visualizer")
         print(f"Usage: {sys.argv[0]} [directory]")
         print("  directory    Path to scan (default: current directory)")
+        print("  --no-confirm    Skip install confirmation prompt")
         print("")
         print("Keyboard shortcuts:")
         print("  Up/Down      Move cursor")
@@ -172,7 +224,7 @@ if __name__ == "__main__":
         }
         #body {
             width: 76;
-            height: 100%;
+            height: auto;
         }
         #search_row {
             width: 100%;
@@ -449,6 +501,7 @@ if __name__ == "__main__":
             yield Footer()
 
         async def on_mount(self):
+            self.query_one("#search_input").can_focus = False
             self.run_worker(self.scan_and_display, exclusive=True)
 
         def action_move_up(self):
@@ -500,7 +553,9 @@ if __name__ == "__main__":
             self._apply_sort_and_filter()
 
         def action_activate_search(self):
-            self.query_one("#search_input", Input).focus()
+            inp = self.query_one("#search_input", Input)
+            inp.can_focus = True
+            inp.focus()
 
         def action_clear_search(self):
             inp = self.query_one("#search_input", Input)
@@ -508,6 +563,7 @@ if __name__ == "__main__":
                 inp.value = ""
                 self.search_query = ""
                 self._apply_sort_and_filter()
+            inp.can_focus = False
             inp.blur()
 
         def on_input_changed(self, event: Input.Changed):

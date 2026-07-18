@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -e
 
+NO_CONFIRM=0
+for arg in "$@"; do
+    if [ "$arg" = "--no-confirm" ]; then
+        NO_CONFIRM=1
+    fi
+done
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -25,6 +32,22 @@ echo ""
 info()  { echo -e "${GREEN}[+]${NC} $1"; }
 warn()  { echo -e "${YELLOW}[!]${NC} $1"; }
 error() { echo -e "${RED}[-]${NC} $1"; }
+
+confirm_install() {
+    local pkg="$1"
+    if [ "$NO_CONFIRM" -eq 1 ]; then
+        return 0
+    fi
+    echo ""
+    warn "About to install '$pkg' via your system package manager."
+    warn "Only install packages from trusted sources."
+    echo -n "Install $pkg? [y/N] "
+    read -r answer
+    case "$answer" in
+        [yY][eE][sS]|[yY]) return 0 ;;
+        *) echo ""; error "Aborted."; exit 1 ;;
+    esac
+}
 
 detect_distro() {
     if [ -f /etc/os-release ]; then
@@ -218,6 +241,7 @@ info "pip found"
 if python3 -c "import textual" 2>/dev/null; then
     info "textual already installed"
 else
+    confirm_install "textual (from PyPI: https://pypi.org/project/textual/)"
     info "Installing textual..."
     if python3 -m pip install --user textual 2>&1; then
         info "textual installed (--user)"
@@ -234,6 +258,7 @@ fi
 if command -v xclip &>/dev/null; then
     info "xclip already installed"
 else
+    confirm_install "xclip (clipboard utility)"
     info "Installing xclip..."
     install_package "xclip" || warn "Could not install xclip. Clipboard copy (c) will not work."
 fi
